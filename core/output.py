@@ -14,7 +14,7 @@ def print_header():
     console.print(f"[dim]  {'─' * HEADER_WIDTH}[/dim]")
 
 
-def print_tool_header(tool_name: str, query: str):
+def print_tool_header(tool_name: str):
     console.rule(f"[dim]{tool_name}[/dim]", style="dim")
 
 
@@ -46,5 +46,6 @@ def print_summary(tool_results: list[dict], txt_path: str, json_path: str):
         table.add_row(r["tool"], status, lines)
 
     console.print(table)
-    console.print(f"[dim]  saved  [/dim]{txt_path}")
-    console.print(f"[dim]         [/dim]{json_path}")
+    _label = "  saved  "
+    console.print(f"[dim]{_label}[/dim]{txt_path}")
+    console.print(f"[dim]{' ' * len(_label)}[/dim]{json_path}")
