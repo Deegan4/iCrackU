@@ -21,6 +21,10 @@ import modules.username as mod_username
 import modules.phone as mod_phone
 import modules.name as mod_name
 import modules.address as mod_address
+import modules.ip as mod_ip
+import modules.domain as mod_domain
+import modules.breach as mod_breach
+import modules.hash as mod_hash
 
 console = Console()
 
@@ -33,16 +37,23 @@ CLI_TOOLS = {
     "sherlock": "pip install sherlock-project",
     "maigret": "pip install maigret",
     "phoneinfoga": "https://github.com/sundowndev/phoneinfoga",
+    "whois": "apt install whois",
+    "subfinder": "go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest",
+    "hashid": "pip install hashid",
 }
 
 PYTHON_LIBS = {
     "geopy": "pip install geopy",
+    "requests": "pip install requests",
+    "dns": "pip install dnspython",
+    "whois": "pip install python-whois",
+    "shodan": "pip install shodan",
 }
 
 
 def run_lookup(lookup_type: str, query: str, module):
     print_header()
-    console.print(f"  {lookup_type}  {query}\n")
+    console.print(f"  [dim]{lookup_type}[/dim]  [bold]{query}[/bold]\n")
 
     tool_results = module.lookup(
         query, on_line=print_line, on_tool_start=print_tool_header
@@ -60,23 +71,29 @@ def run_lookup(lookup_type: str, query: str, module):
 
 def check_tools():
     print_header()
-    table = Table(box=box.SIMPLE_HEAD, show_header=True, header_style="dim")
+    table = Table(
+        box=box.SIMPLE_HEAVY,
+        show_header=True,
+        header_style="bold",
+        show_edge=False,
+        pad_edge=True,
+    )
     table.add_column("Tool")
     table.add_column("Type")
     table.add_column("Status")
-    table.add_column("Install hint")
+    table.add_column("Install hint", style="dim")
 
     for tool, hint in CLI_TOOLS.items():
         found = shutil.which(tool) is not None
-        status = "✓" if found else "✗"
+        status = "[green]✓[/green]" if found else "[red]✗[/red]"
         table.add_row(tool, "cli", status, hint if not found else "")
 
     for lib, hint in PYTHON_LIBS.items():
         try:
             __import__(lib)
-            table.add_row(lib, "python", "✓", "")
+            table.add_row(lib, "python", "[green]✓[/green]", "")
         except ImportError:
-            table.add_row(lib, "python", "✗", hint)
+            table.add_row(lib, "python", "[red]✗[/red]", hint)
 
     console.print(table)
 
@@ -93,11 +110,17 @@ def list_results():
     )
 
     if not files:
-        console.print("[dim]  No saved results found.[/dim]")
+        console.print("  [dim]No saved results found.[/dim]")
         return
 
-    table = Table(box=box.SIMPLE_HEAD, show_header=True, header_style="dim")
-    table.add_column("#", justify="right")
+    table = Table(
+        box=box.SIMPLE_HEAVY,
+        show_header=True,
+        header_style="bold",
+        show_edge=False,
+        pad_edge=True,
+    )
+    table.add_column("#", justify="right", style="dim")
     table.add_column("File")
 
     for i, name in enumerate(files, 1):
@@ -114,8 +137,12 @@ def interactive_menu():
         ("3", "Phone lookup", "phone"),
         ("4", "Name lookup", "name"),
         ("5", "Address lookup", "address"),
-        ("6", "Check installed tools", None),
-        ("7", "List saved results", None),
+        ("6", "IP lookup", "ip"),
+        ("7", "Domain lookup", "domain"),
+        ("8", "Breach check", "breach"),
+        ("9", "Hash lookup", "hash"),
+        ("10", "Check installed tools", None),
+        ("11", "List saved results", None),
         ("0", "Exit", None),
     ]
 
@@ -124,16 +151,18 @@ def interactive_menu():
     while True:
         console.print()
         for key, label, _ in options:
-            console.print(f"  [dim]{key}[/dim]  {label}")
+            console.print(f"  [bright_green]{key}[/bright_green]  {label}")
 
-        choice = console.input("\n  [dim]>[/dim] ").strip()
+        console.print()
+        console.rule(style="dim")
+        choice = console.input("  [bright_green]>[/bright_green] ").strip()
 
         if choice == "0":
             console.print("[dim]  bye[/dim]")
             sys.exit(0)
-        elif choice == "6":
+        elif choice == "10":
             check_tools()
-        elif choice == "7":
+        elif choice == "11":
             list_results()
         else:
             if choice not in mapping:
@@ -150,6 +179,10 @@ def interactive_menu():
                 "phone": mod_phone,
                 "name": mod_name,
                 "address": mod_address,
+                "ip": mod_ip,
+                "domain": mod_domain,
+                "breach": mod_breach,
+                "hash": mod_hash,
             }[lookup_type]
             run_lookup(lookup_type, query, module)
 
@@ -164,6 +197,12 @@ def main():
     parser.add_argument("--phone", metavar="PHONE", help="Phone number lookup")
     parser.add_argument("--name", metavar="NAME", help="Person name lookup")
     parser.add_argument("--address", metavar="ADDRESS", help="Address lookup")
+    parser.add_argument("--ip", metavar="IP", help="IP address lookup")
+    parser.add_argument("--domain", metavar="DOMAIN", help="Domain/WHOIS lookup")
+    parser.add_argument(
+        "--breach", metavar="EMAIL", help="Breach check (HaveIBeenPwned)"
+    )
+    parser.add_argument("--hash", metavar="HASH", help="Hash identification and lookup")
     parser.add_argument("--check", action="store_true", help="Show installed tools")
     parser.add_argument("--list", action="store_true", help="List saved results")
 
@@ -183,6 +222,14 @@ def main():
         run_lookup("name", args.name, mod_name)
     elif args.address:
         run_lookup("address", args.address, mod_address)
+    elif args.ip:
+        run_lookup("ip", args.ip, mod_ip)
+    elif args.domain:
+        run_lookup("domain", args.domain, mod_domain)
+    elif args.breach:
+        run_lookup("breach", args.breach, mod_breach)
+    elif args.hash:
+        run_lookup("hash", args.hash, mod_hash)
     else:
         interactive_menu()
 
