@@ -9,7 +9,7 @@ from rich.table import Table
 from rich import box
 
 from core.output import (
-    print_banner,
+    print_header,
     print_tool_header,
     print_line,
     print_tool_skipped,
@@ -41,10 +41,8 @@ PYTHON_LIBS = {
 
 
 def run_lookup(lookup_type: str, query: str, module):
-    print_banner()
-    console.print(
-        f"[bold]Lookup:[/bold] [cyan]{lookup_type.upper()}[/cyan]  [white]{query}[/white]\n"
-    )
+    print_header()
+    console.print(f"  {lookup_type}  {query}\n")
 
     def on_line(line):
         print_line(line)
@@ -64,31 +62,30 @@ def run_lookup(lookup_type: str, query: str, module):
 
 
 def check_tools():
-    print_banner()
-    table = Table(title="Tool Availability", box=box.ROUNDED)
-    table.add_column("Tool", style="cyan")
-    table.add_column("Type", style="dim")
+    print_header()
+    table = Table(box=box.SIMPLE_HEAD, show_header=True, header_style="dim")
+    table.add_column("Tool")
+    table.add_column("Type")
     table.add_column("Status")
-    table.add_column("Install hint", style="dim")
+    table.add_column("Install hint")
 
     for tool, hint in CLI_TOOLS.items():
         found = shutil.which(tool) is not None
-        status = "[green]✓ installed[/green]" if found else "[red]✗ missing[/red]"
+        status = "✓" if found else "✗"
         table.add_row(tool, "cli", status, hint if not found else "")
 
     for lib, hint in PYTHON_LIBS.items():
         try:
             __import__(lib)
-            status = "[green]✓ installed[/green]"
-            table.add_row(lib, "python", status, "")
+            table.add_row(lib, "python", "✓", "")
         except ImportError:
-            table.add_row(lib, "python", "[red]✗ missing[/red]", hint)
+            table.add_row(lib, "python", "✗", hint)
 
     console.print(table)
 
 
 def list_results():
-    print_banner()
+    print_header()
     files = (
         sorted(
             [f for f in os.listdir(RESULTS_DIR) if f.endswith(".json")],
@@ -99,12 +96,12 @@ def list_results():
     )
 
     if not files:
-        console.print("[dim]No saved results found.[/dim]")
+        console.print("[dim]  No saved results found.[/dim]")
         return
 
-    table = Table(title="Saved Results", box=box.ROUNDED)
-    table.add_column("#", style="dim", justify="right")
-    table.add_column("File", style="cyan")
+    table = Table(box=box.SIMPLE_HEAD, show_header=True, header_style="dim")
+    table.add_column("#", justify="right")
+    table.add_column("File")
 
     for i, name in enumerate(files, 1):
         table.add_row(str(i), name)
@@ -113,7 +110,7 @@ def list_results():
 
 
 def interactive_menu():
-    print_banner()
+    print_header()
     options = [
         ("1", "Email lookup", "email"),
         ("2", "Username lookup", "username"),
@@ -126,15 +123,14 @@ def interactive_menu():
     ]
 
     while True:
-        console.print("\n[bold cyan]  iCrackU — OSINT Lookup Tool[/bold cyan]")
-        console.print("  " + "─" * 29)
+        console.print()
         for key, label, _ in options:
-            console.print(f"  [[bold]{key}[/bold]] {label}")
+            console.print(f"  [dim]{key}[/dim]  {label}")
 
-        choice = console.input("\n[bold]Select:[/bold] ").strip()
+        choice = console.input("\n  [dim]>[/dim] ").strip()
 
         if choice == "0":
-            console.print("[dim]Bye.[/dim]")
+            console.print("[dim]  bye[/dim]")
             sys.exit(0)
         elif choice == "6":
             check_tools()
@@ -143,12 +139,12 @@ def interactive_menu():
         else:
             mapping = {o[0]: (o[2], o[1]) for o in options if o[2]}
             if choice not in mapping:
-                console.print("[red]Invalid choice.[/red]")
+                console.print("[dim]  invalid choice[/dim]")
                 continue
             lookup_type, label = mapping[choice]
-            query = console.input(f"[bold]{label} query:[/bold] ").strip()
+            query = console.input(f"  [dim]{label.lower()}[/dim]  > ").strip()
             if not query:
-                console.print("[red]Empty query.[/red]")
+                console.print("[dim]  empty query[/dim]")
                 continue
             module = {
                 "email": mod_email,
