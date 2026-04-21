@@ -113,3 +113,22 @@ def test_domain_lookup_returns_list():
     assert isinstance(results, list)
     assert all("tool" in r for r in results)
     assert any(r["tool"] == "whois-py" for r in results)
+
+
+def test_breach_lookup_returns_list():
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = [
+        {"Name": "Adobe", "PwnCount": 153000000, "IsVerified": True},
+        {"Name": "LinkedIn", "PwnCount": 164611595, "IsVerified": True},
+    ]
+    with (
+        patch("modules.breach.requests.get", return_value=mock_resp),
+        patch("modules.breach.require_key", return_value="testkey"),
+    ):
+        from modules.breach import lookup
+
+        results = lookup("foo@bar.com", on_line=None)
+    assert isinstance(results, list)
+    assert any(r["tool"] == "hibp" for r in results)
+    assert results[0]["returncode"] == 0
