@@ -33,3 +33,18 @@ def test_name_lookup_returns_list():
         from modules.name import lookup
         results = lookup("John Doe", on_line=None)
     assert isinstance(results, list)
+
+def test_address_lookup_returns_list():
+    mock_location = MagicMock()
+    mock_location.address = "123 Main St, New York, USA"
+    mock_location.latitude = 40.7128
+    mock_location.longitude = -74.0060
+    mock_location.raw = {"display_name": "123 Main St, New York, USA", "type": "house"}
+
+    with patch("geopy.geocoders.Nominatim.geocode", return_value=mock_location):
+        from modules.address import lookup
+        results = lookup("123 Main St, New York", on_line=None)
+    assert isinstance(results, list)
+    assert len(results) == 1
+    assert results[0]["tool"] == "nominatim"
+    assert results[0]["returncode"] == 0
