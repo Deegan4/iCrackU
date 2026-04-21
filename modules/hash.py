@@ -19,8 +19,6 @@ def lookup(
     results.append(run_tool("hashid", [query], query, on_line))
 
     # VirusTotal — optional API key
-    if on_tool_start:
-        on_tool_start("virustotal")
     key = require_key(
         "virustotal",
         "VirusTotal API key (free at virustotal.com — Enter to skip): ",
@@ -35,6 +33,9 @@ def lookup(
             }
         )
         return results
+
+    if on_tool_start:
+        on_tool_start("virustotal")
     try:
         resp = requests.get(
             f"https://www.virustotal.com/api/v3/files/{query}",

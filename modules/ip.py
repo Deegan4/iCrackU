@@ -42,7 +42,7 @@ def lookup(
         rc = 0
         if on_line:
             on_line(output)
-    except socket.herror:
+    except (socket.herror, socket.gaierror):
         output = "No reverse DNS record."
         rc = 1
     results.append(

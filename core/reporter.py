@@ -29,7 +29,13 @@ def generate_markdown(data: dict) -> str:
         data["targets"][0]["identifier"] if data.get("targets") else "profile"
     )
     lookup_type = data.get("type", "lookup")
-    timestamp = data.get("timestamp", "").replace("_", " ")
+    raw = data.get("timestamp", "")
+    try:
+        from datetime import datetime as _dt
+
+        timestamp = _dt.strptime(raw, "%Y-%m-%d_%H%M%S").strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        timestamp = raw.replace("_", " ")
     tools = _tools_from_data(data)
 
     lines = [
@@ -65,7 +71,13 @@ def generate_html(data: dict) -> str:
         data["targets"][0]["identifier"] if data.get("targets") else "profile"
     )
     lookup_type = data.get("type", "lookup")
-    timestamp = data.get("timestamp", "").replace("_", " ")
+    raw = data.get("timestamp", "")
+    try:
+        from datetime import datetime as _dt
+
+        timestamp = _dt.strptime(raw, "%Y-%m-%d_%H%M%S").strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        timestamp = raw.replace("_", " ")
     tools = _tools_from_data(data)
 
     summary_rows = "".join(
