@@ -4,8 +4,8 @@ from core.runner import run_tool
 TOOLS = {
     "sherlock": lambda q: [q],
     "maigret": lambda q: [q, "--no-color"],
-    "social-analyzer": lambda q: ["--username", q, "--metadata"],
 }
+
 
 def lookup(
     query: str,

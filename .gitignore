@@ -4,3 +4,8 @@ __pycache__/
 *.pyo
 .pytest_cache/
 venv/
+.claude/
+# sherlock/maigret dump output files in cwd
+john_*.txt
+johndoe*.txt
+*_username.txt

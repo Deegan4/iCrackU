@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime
 
+
 def save_results(
     lookup_type: str,
     query: str,

@@ -1,9 +1,20 @@
 from typing import Callable, Optional
 from core.runner import run_tool
 
+
+# sherlock/maigret accept a username-style token; we use the sanitised name
+# (spaces → underscores) as the closest approximation for person-name searches.
+# theHarvester is included only when the name looks like a domain/org keyword
+# (no spaces), using its -d flag correctly as a domain seed.
+def _name_token(q: str) -> str:
+    return q.strip().lower().replace(" ", "_")
+
+
 TOOLS = {
-    "theHarvester": lambda q: ["-d", q.replace(" ", "+"), "-b", "all", "-l", "100"],
+    "sherlock": lambda q: [_name_token(q)],
+    "maigret": lambda q: [_name_token(q), "--no-color"],
 }
+
 
 def lookup(
     query: str,
