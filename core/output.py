@@ -14,11 +14,6 @@ def print_header():
     console.print(f"[dim]  {'─' * HEADER_WIDTH}[/dim]")
 
 
-def print_banner():
-    """Backward compatibility alias for print_header()."""
-    print_header()
-
-
 def print_tool_header(tool_name: str, query: str):
     console.rule(f"[dim]{tool_name}[/dim]", style="dim")
 
