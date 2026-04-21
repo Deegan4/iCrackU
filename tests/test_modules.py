@@ -132,3 +132,27 @@ def test_breach_lookup_returns_list():
     assert isinstance(results, list)
     assert any(r["tool"] == "hibp" for r in results)
     assert results[0]["returncode"] == 0
+
+
+def test_hash_lookup_returns_list():
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "data": {
+            "attributes": {
+                "meaningful_name": "eicar.txt",
+                "last_analysis_stats": {"malicious": 0, "harmless": 70},
+                "type_description": "Text",
+            }
+        }
+    }
+    with (
+        patch("core.runner.run_tool", side_effect=fake_run_tool),
+        patch("modules.hash.requests.get", return_value=mock_resp),
+        patch("modules.hash.require_key", return_value="vtkey"),
+    ):
+        from modules.hash import lookup
+
+        results = lookup("d41d8cd98f00b204e9800998ecf8427e", on_line=None)
+    assert isinstance(results, list)
+    assert any(r["tool"] == "hashid" for r in results)
