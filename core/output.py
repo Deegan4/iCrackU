@@ -1,54 +1,55 @@
 from rich.console import Console
-from rich.table import Table
 from rich import box
+from rich.table import Table
 
 console = Console()
 
-BANNER = r"""
- _  _____                _    _   _
-(_)/  __ \              | |  | | | |
- _ | /  \/_ __ __ _  ___| | _| | | |
-| || |   | '__/ _` |/ __| |/ / | | |
-| || \__/\ | | (_| | (__|   <| |_| |
-|_| \____/_|  \__,_|\___|_|\_\\___/
-"""
+HEADER_WIDTH = 32
+
+
+def print_header():
+    console.print(
+        f"[steel_blue]  iCrackU[/steel_blue][dim]  ·  OSINT Lookup Tool[/dim]"
+    )
+    console.print(f"[dim]  {'─' * HEADER_WIDTH}[/dim]")
+
 
 def print_banner():
-    console.print(f"[bold cyan]{BANNER}[/bold cyan]")
-    console.print("[dim]  OSINT Lookup Tool — Kali Linux[/dim]\n")
+    """Backward compatibility alias for print_header()."""
+    print_header()
+
 
 def print_tool_header(tool_name: str, query: str):
-    console.rule(f"[bold yellow]{tool_name}[/bold yellow]  [dim]{query}[/dim]")
+    console.rule(f"[dim]{tool_name}[/dim]", style="dim")
+
 
 def print_line(line: str):
-    lower = line.lower()
-    if any(w in lower for w in ["found", "yes", "true", "registered", "+"]):
-        console.print(f"[green]{line}[/green]")
-    elif any(w in lower for w in ["not found", "no ", "false", "[-]", "error"]):
-        console.print(f"[yellow]{line}[/yellow]")
-    else:
-        console.print(line)
+    console.print(line)
+
 
 def print_tool_skipped(tool_name: str):
-    console.print(f"[red]  ✗ {tool_name} not installed — skipping[/red]")
+    console.print(f"[dim]  {tool_name}  not installed[/dim]")
+
 
 def print_summary(tool_results: list[dict], txt_path: str, json_path: str):
     console.print()
-    table = Table(title="Summary", box=box.ROUNDED)
-    table.add_column("Tool", style="cyan")
+    table = Table(box=box.SIMPLE_HEAD, show_header=True, header_style="dim")
+    table.add_column("Tool")
     table.add_column("Status")
     table.add_column("Lines")
 
     for r in tool_results:
         if r["returncode"] == -1:
-            status = "[red]skipped[/red]"
+            status = "–"
+        elif r["returncode"] == -2:
+            status = "⏱"
         elif r["returncode"] == 0:
-            status = "[green]ok[/green]"
+            status = "✓"
         else:
-            status = f"[yellow]exit {r['returncode']}[/yellow]"
+            status = f"exit {r['returncode']}"
         lines = str(len(r["output"].splitlines()))
         table.add_row(r["tool"], status, lines)
 
     console.print(table)
-    console.print(f"\n[dim]Saved:[/dim] [cyan]{txt_path}[/cyan]")
-    console.print(f"[dim]       [/dim] [cyan]{json_path}[/cyan]")
+    console.print(f"[dim]  saved  [/dim]{txt_path}")
+    console.print(f"[dim]         [/dim]{json_path}")
