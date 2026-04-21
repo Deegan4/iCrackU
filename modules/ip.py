@@ -29,7 +29,9 @@ def lookup(
     except Exception as e:
         output = f"ipinfo error: {e}"
         rc = 1
-    results.append({"tool": "ipinfo", "query": query, "returncode": rc, "output": output})
+    results.append(
+        {"tool": "ipinfo", "query": query, "returncode": rc, "output": output}
+    )
 
     # reverse DNS — free
     if on_tool_start:
@@ -43,26 +45,33 @@ def lookup(
     except socket.herror:
         output = "No reverse DNS record."
         rc = 1
-    results.append({"tool": "reverse-dns", "query": query, "returncode": rc, "output": output})
+    results.append(
+        {"tool": "reverse-dns", "query": query, "returncode": rc, "output": output}
+    )
 
     # whois CLI — free
+    if on_tool_start:
+        on_tool_start("whois")
     results.append(run_tool("whois", [query], query, on_line))
 
     # Shodan — optional API key
     key = require_key("shodan", "Shodan API key (Enter to skip): ")
     if not key:
-        results.append({
-            "tool": "shodan",
-            "query": query,
-            "returncode": -1,
-            "output": "shodan — API key not configured",
-        })
+        results.append(
+            {
+                "tool": "shodan",
+                "query": query,
+                "returncode": -1,
+                "output": "shodan — API key not configured",
+            }
+        )
         return results
 
     if on_tool_start:
         on_tool_start("shodan")
     try:
         import shodan as shodan_lib
+
         api = shodan_lib.Shodan(key)
         host = api.host(query)
         lines = [
@@ -79,6 +88,8 @@ def lookup(
     except Exception as e:
         output = f"shodan error: {e}"
         rc = 1
-    results.append({"tool": "shodan", "query": query, "returncode": rc, "output": output})
+    results.append(
+        {"tool": "shodan", "query": query, "returncode": rc, "output": output}
+    )
 
     return results
