@@ -51,7 +51,40 @@ PYTHON_LIBS = {
 }
 
 
-def run_lookup(lookup_type: str, query: str, module):
+def generate_report(json_path: str, fmt: str = "html"):
+    import json as json_lib
+    from core.reporter import generate_html, generate_markdown
+
+    if not os.path.exists(json_path):
+        console.print(f"  [red]File not found:[/red] {json_path}")
+        return
+
+    with open(json_path) as f:
+        data = json_lib.load(f)
+
+    base = os.path.splitext(json_path)[0]
+    generated = []
+
+    if fmt in ("html", "both"):
+        html_path = f"{base}.html"
+        with open(html_path, "w") as f:
+            f.write(generate_html(data))
+        generated.append(html_path)
+
+    if fmt in ("md", "both"):
+        md_path = f"{base}.md"
+        with open(md_path, "w") as f:
+            f.write(generate_markdown(data))
+        generated.append(md_path)
+
+    print_header()
+    console.print("  [dim]report generated[/dim]\n")
+    for path in generated:
+        console.print(f"  [bright_green]→[/bright_green]  {path}")
+    console.print()
+
+
+def run_lookup(lookup_type: str, query: str, module, report_fmt: str | None = None):
     print_header()
     console.print(f"  [dim]{lookup_type}[/dim]  [bold]{query}[/bold]\n")
 
@@ -67,6 +100,29 @@ def run_lookup(lookup_type: str, query: str, module):
         results_dir=RESULTS_DIR,
     )
     print_summary(tool_results, txt_path, json_path)
+
+    if report_fmt:
+        generate_report(json_path, fmt=report_fmt)
+
+
+def run_target_profile(inputs: dict[str, str]):
+    from core.profiler import build_targets_from_input, run_profile, save_profile
+    from core.output import print_profile_summary
+
+    print_header()
+    label = "  ·  ".join(v for v in inputs.values() if v)
+    console.print(f"  [dim]target profile[/dim]  [bold]{label}[/bold]\n")
+
+    targets = build_targets_from_input(inputs)
+    profile_results = run_profile(
+        targets,
+        on_line=print_line,
+        on_tool_start=print_tool_header,
+    )
+
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    json_path = save_profile(profile_results, results_dir=RESULTS_DIR)
+    print_profile_summary(inputs, profile_results, json_path)
 
 
 def check_tools():
@@ -141,6 +197,8 @@ def interactive_menu():
         ("7", "Domain lookup", "domain"),
         ("8", "Breach check", "breach"),
         ("9", "Hash lookup", "hash"),
+        ("P", "Target profile", None),
+        ("R", "Generate report", None),
         ("10", "Check installed tools", None),
         ("11", "List saved results", None),
         ("0", "Exit", None),
@@ -164,6 +222,41 @@ def interactive_menu():
             check_tools()
         elif choice == "11":
             list_results()
+        elif choice in ("r", "R"):
+            files = (
+                sorted(
+                    [f for f in os.listdir(RESULTS_DIR) if f.endswith(".json")],
+                    reverse=True,
+                )
+                if os.path.isdir(RESULTS_DIR)
+                else []
+            )
+            if not files:
+                console.print("  [dim]No saved results found.[/dim]")
+                continue
+            list_results()
+            pick = console.input("  [dim]select #[/dim]  > ").strip()
+            try:
+                chosen = files[int(pick) - 1]
+            except (ValueError, IndexError):
+                console.print("[dim]  invalid selection[/dim]")
+                continue
+            fmt = (
+                console.input("  [dim]format (html/md/both)[/dim]  > ").strip()
+                or "html"
+            )
+            generate_report(os.path.join(RESULTS_DIR, chosen), fmt=fmt)
+        elif choice in ("p", "P"):
+            inputs = {}
+            fields = ["name", "email", "username", "phone", "ip", "domain"]
+            for field in fields:
+                val = console.input(f"  [dim]{field:<10}[/dim]  > ").strip()
+                if val:
+                    inputs[field] = val
+            if not inputs:
+                console.print("[dim]  no input provided[/dim]")
+            else:
+                run_target_profile(inputs)
         else:
             if choice not in mapping:
                 console.print("[dim]  invalid choice[/dim]")
@@ -205,31 +298,58 @@ def main():
     parser.add_argument("--hash", metavar="HASH", help="Hash identification and lookup")
     parser.add_argument("--check", action="store_true", help="Show installed tools")
     parser.add_argument("--list", action="store_true", help="List saved results")
+    parser.add_argument(
+        "--target", metavar="TARGET", help="Auto-detect and run all relevant lookups"
+    )
+    parser.add_argument(
+        "--report", metavar="JSON_FILE", help="Generate report from saved result JSON"
+    )
+    parser.add_argument(
+        "--save-report",
+        action="store_true",
+        help="Generate report after lookup completes",
+    )
+    parser.add_argument(
+        "--format",
+        metavar="FORMAT",
+        default="html",
+        help="Report format: html (default), md, or both",
+    )
 
     args = parser.parse_args()
+
+    report_fmt = args.format if args.save_report else None
 
     if args.check:
         check_tools()
     elif args.list:
         list_results()
+    elif args.report:
+        generate_report(args.report, fmt=args.format)
     elif args.email:
-        run_lookup("email", args.email, mod_email)
+        run_lookup("email", args.email, mod_email, report_fmt=report_fmt)
     elif args.username:
-        run_lookup("username", args.username, mod_username)
+        run_lookup("username", args.username, mod_username, report_fmt=report_fmt)
     elif args.phone:
-        run_lookup("phone", args.phone, mod_phone)
+        run_lookup("phone", args.phone, mod_phone, report_fmt=report_fmt)
     elif args.name:
-        run_lookup("name", args.name, mod_name)
+        run_lookup("name", args.name, mod_name, report_fmt=report_fmt)
     elif args.address:
-        run_lookup("address", args.address, mod_address)
+        run_lookup("address", args.address, mod_address, report_fmt=report_fmt)
     elif args.ip:
-        run_lookup("ip", args.ip, mod_ip)
+        run_lookup("ip", args.ip, mod_ip, report_fmt=report_fmt)
     elif args.domain:
-        run_lookup("domain", args.domain, mod_domain)
+        run_lookup("domain", args.domain, mod_domain, report_fmt=report_fmt)
     elif args.breach:
-        run_lookup("breach", args.breach, mod_breach)
+        run_lookup("breach", args.breach, mod_breach, report_fmt=report_fmt)
     elif args.hash:
-        run_lookup("hash", args.hash, mod_hash)
+        run_lookup("hash", args.hash, mod_hash, report_fmt=report_fmt)
+    elif args.target:
+        from core.profiler import classify
+
+        lookup_types = classify(args.target)
+        inputs = {lt: args.target for lt in lookup_types}
+        run_target_profile(inputs)
     else:
         interactive_menu()
 
