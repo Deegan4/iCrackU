@@ -88,3 +88,28 @@ def test_ip_lookup_returns_list():
     assert isinstance(results, list)
     assert all("tool" in r for r in results)
     assert any(r["tool"] == "ipinfo" for r in results)
+
+
+def test_domain_lookup_returns_list():
+    mock_whois = MagicMock()
+    mock_whois.registrar = "GoDaddy"
+    mock_whois.creation_date = "2000-01-01"
+    mock_whois.expiration_date = "2030-01-01"
+    mock_whois.name_servers = ["ns1.example.com", "ns2.example.com"]
+
+    mock_answer = MagicMock()
+    mock_answer.__iter__ = MagicMock(
+        return_value=iter([MagicMock(address="93.184.216.34")])
+    )
+
+    with (
+        patch("modules.domain.whois.whois", return_value=mock_whois),
+        patch("modules.domain.dns.resolver.resolve", return_value=mock_answer),
+        patch("core.runner.run_tool", side_effect=fake_run_tool),
+    ):
+        from modules.domain import lookup
+
+        results = lookup("example.com", on_line=None)
+    assert isinstance(results, list)
+    assert all("tool" in r for r in results)
+    assert any(r["tool"] == "whois-py" for r in results)
