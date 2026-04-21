@@ -44,14 +44,11 @@ def run_lookup(lookup_type: str, query: str, module):
     print_header()
     console.print(f"  {lookup_type}  {query}\n")
 
-    def on_line(line):
-        print_line(line)
+    tool_results = module.lookup(
+        query, on_line=print_line, on_tool_start=print_tool_header
+    )
 
-    def on_tool_start(tool_name):
-        print_tool_header(tool_name)
-
-    tool_results = module.lookup(query, on_line=on_line, on_tool_start=on_tool_start)
-
+    os.makedirs(RESULTS_DIR, exist_ok=True)
     txt_path, json_path = save_results(
         lookup_type=lookup_type,
         query=query,
@@ -122,6 +119,8 @@ def interactive_menu():
         ("0", "Exit", None),
     ]
 
+    mapping = {o[0]: (o[2], o[1]) for o in options if o[2]}
+
     while True:
         console.print()
         for key, label, _ in options:
@@ -137,7 +136,6 @@ def interactive_menu():
         elif choice == "7":
             list_results()
         else:
-            mapping = {o[0]: (o[2], o[1]) for o in options if o[2]}
             if choice not in mapping:
                 console.print("[dim]  invalid choice[/dim]")
                 continue
