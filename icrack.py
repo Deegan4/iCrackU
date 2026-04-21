@@ -37,7 +37,10 @@ def run_lookup(lookup_type: str, query: str, module):
     def on_line(line):
         print_line(line)
 
-    tool_results = module.lookup(query, on_line=on_line)
+    def on_tool_start(tool_name):
+        print_tool_header(tool_name, query)
+
+    tool_results = module.lookup(query, on_line=on_line, on_tool_start=on_tool_start)
 
     txt_path, json_path = save_results(
         lookup_type=lookup_type,
